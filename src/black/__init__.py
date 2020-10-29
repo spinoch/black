@@ -1018,6 +1018,7 @@ def format_str(src_contents: str, *, mode: Mode) -> FileContent:
     
     # Convert back to Vyper
     import re
+    # USE re.sub to cast vyper.ast.VYPER_CLASS_TYPES and VYPER_EXPRESSION_TYPES
     import ipdb; ipdb.set_trace()
     return "".join(dst_contents)
 
