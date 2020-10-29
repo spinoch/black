@@ -390,6 +390,9 @@ class BlackTestCase(unittest.TestCase):
             black.assert_equivalent(source, actual)
             black.assert_stable(source, actual, DEFAULT_MODE)
 
+    def test_vyper(self) -> None:
+        source, _ = read_data("Vault.vy")
+        
     def test_expression_diff(self) -> None:
         source, _ = read_data("expression.py")
         expected, _ = read_data("expression.diff")

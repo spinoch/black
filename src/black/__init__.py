@@ -693,6 +693,7 @@ def reformat_one(
         if report.verbose:
             traceback.print_exc()
         report.failed(src, str(exc))
+        raise exc
 
 
 def reformat_many(
@@ -925,6 +926,7 @@ def format_stdin_to_stdout(
             f.write(d)
         f.detach()
 
+import vyper
 
 def format_file_contents(src_contents: str, *, fast: bool, mode: Mode) -> FileContent:
     """Reformat contents of a file and return new contents.
@@ -976,7 +978,14 @@ def format_str(src_contents: str, *, mode: Mode) -> FileContent:
         hey
 
     """
-    src_node = lib2to3_parse(src_contents.lstrip(), mode.target_versions)
+    # TODO: Parse vyper to Python
+    #result = vyper.ast.parse_to_ast(src_txt)
+    # Convert to Python
+
+    orig_contents = src_contents
+    modification_offsets, src_contents = vyper.ast.pre_parser.pre_parse(src_contents.lstrip())
+    src_node = lib2to3_parse(src_contents, mode.target_versions)
+    # '^(interface)|(log)|(event)|(struct) .*$' ../../Vault.vy 
     dst_contents = []
     future_imports = get_future_imports(src_node)
     if mode.target_versions:
@@ -1006,6 +1015,10 @@ def format_str(src_contents: str, *, mode: Mode) -> FileContent:
             current_line, mode=mode, features=split_line_features
         ):
             dst_contents.append(str(line))
+    
+    # Convert back to Vyper
+    import re
+    import ipdb; ipdb.set_trace()
     return "".join(dst_contents)
 
 
@@ -5887,7 +5900,17 @@ def get_future_imports(node: Node) -> Set[str]:
             else:
                 raise AssertionError("Invalid syntax parsing imports")
 
-    for child in node.children:
+    # import ipdb; ipdb.set_trace()
+    if hasattr(node, "_children"):
+        import vyper
+        node: vyper.ast.VyperNode
+        children = node.get_children()
+    else:
+        children = node.children
+    
+    # import ipdb; ipdb.set_trace()
+    
+    for child in children:
         if child.type != syms.simple_stmt:
             break
 
@@ -6235,6 +6258,9 @@ def assert_equivalent(src: str, dst: str) -> None:
     try:
         src_ast = parse_ast(src)
     except Exception as exc:
+        # FIXME
+        # import ipdb; ipdb.set_trace()
+        return 
         raise AssertionError(
             "cannot use --safe with this file; failed to parse source file.  AST"
             f" error message: {exc}"
