@@ -1019,7 +1019,33 @@ def format_str(src_contents: str, *, mode: Mode) -> FileContent:
     # Convert back to Vyper
     import re
     # USE re.sub to cast vyper.ast.VYPER_CLASS_TYPES and VYPER_EXPRESSION_TYPES
-    import ipdb; ipdb.set_trace()
+    # Can just substitute `class` for vyper tokens
+    dst_contents = "".join(dst_contents)
+#      re.findall("^class.*$", dst_contents, re.M)
+# ['class DetailedERC20:', 'class Strategy:', 'class Transfer:', 'class Approval:', 'class StrategyParams:', 'class StrategyAdded:', 'class StrategyReported:']
+
+    # ?P<name> saves the group under match.group("$name")
+    # REGEX_EXTRACT_VYPER_NAMES = re.compile(r"^[^\S\r\n]*(?:class|yield)\s*(?P<name>\w+).*$",  flags=re.MULTILINE)
+    REGEX_EXTRACT_VYPER_NAMES = re.compile(r"^(?P<leading_whitespace>[^\S\r\n]*)(?:class|yield)\s*(?P<name>\w+)(?P<trailing_characters>.*)$",  flags=re.MULTILINE)
+
+    class_names = re.findall(REGEX_EXTRACT_VYPER_NAMES, dst_contents)
+    # [^\S\r\n] matches any whitespace except newlines
+    # re.findall(r"^(?:interface|log|event|struct)\s+(\w+).*$", orig_contents, re.M)
+    vyper_types = []
+    for vyper_type in modification_offsets.values():
+        vyper_type =vyper_type[0].lower() + vyper_type[1:]
+        if vyper_type.endswith("Def"):
+            vyper_type = vyper_type[:-3]
+        vyper_types.append(vyper_type)
+    
+    for vyper_type in vyper_types:
+        def _replacement_function(match):
+            #leading_whitepace = 
+            return f"{match.group('leading_whitespace')}{vyper_type} {match.group('name')}{match.group('trailing_characters')}"
+        dst_contents = REGEX_EXTRACT_VYPER_NAMES.sub(_replacement_function, string=dst_contents, count=1)
+#     re.sub(r"^[^\S\r\n]*(?:class|yield)\s*(\w+).*$", lambda match: match.groups()[0], dst_contents[1
+# 00:400], count=3, flags=re.M)
+    #import ipdb; ipdb.set_trace()
     return "".join(dst_contents)
 
 
